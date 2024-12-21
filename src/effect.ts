@@ -103,10 +103,11 @@ export function gatherEffects<A>(
     }
   } else {
     const manager = getEffectMapper(effect.home);
+    let gatheredEffect = gatheredEffects[effect.home];
     if (!gatheredEffects[effect.home]) {
       gatheredEffects[effect.home] = { cmds: [], subs: [] };
+      gatheredEffect = gatheredEffects[effect.home];
     }
-    const gatheredEffect = gatheredEffects[effect.home];
     const list = isCmd ? gatheredEffect.cmds : gatheredEffect.subs;
     const mapper = isCmd ? manager.mapCmd : manager.mapSub;
     list.push(actionMapper ? mapper(actionMapper, effect) : effect);

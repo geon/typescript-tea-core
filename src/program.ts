@@ -2,7 +2,7 @@ import { Cmd } from "./cmd";
 import { Sub } from "./sub";
 import { Dispatch } from "./dispatch";
 import { EffectManager, createGetEffectManager } from "./effect-manager";
-import { GatheredEffects, gatherEffects } from "./effect";
+import { gatherEffects } from "./effect";
 
 /**
  * A program represents the root of an application.
@@ -115,9 +115,7 @@ export function run<Init, State, Action, View>(
     state = change[0];
     const cmd = change[1];
     const sub = subscriptions && subscriptions(state);
-    const gatheredEffects: GatheredEffects<Action> = {};
-    cmd && gatherEffects(getEffectManager, gatheredEffects, true, cmd); // eslint-disable-line @typescript-eslint/no-unused-expressions,no-unused-expressions
-    sub && gatherEffects(getEffectManager, gatheredEffects, false, sub); // eslint-disable-line @typescript-eslint/no-unused-expressions,no-unused-expressions
+    const gatheredEffects = gatherEffects(getEffectManager, cmd, sub);
     // Always call all effect managers so they get updated subscriptions even if there are no subscriptions anymore
     for (const em of effectManagers) {
       const home = em.home;

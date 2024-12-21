@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { Effect, InternalHome, MappedEffect, gatherEffects, GatheredEffects, EffectMapper, mapEffect } from "../effect";
+import { Effect, InternalHome, MappedEffect, gatherEffects, EffectMapper, mapEffect } from "../effect";
 
 test("map effect", () => {
   const effect: Effect<unknown> = { home: "manager1", type: "cmd1" };
@@ -27,8 +27,7 @@ test("gather effects - single command", () => {
     mapSub: (_, b) => b,
   };
   const effect: Effect<unknown> = { home: "manager1", type: "cmd1" };
-  const gatheredEffects: GatheredEffects<unknown> = {};
-  gatherEffects(() => manager1, gatheredEffects, true, effect);
+  const gatheredEffects = gatherEffects(() => manager1, effect, undefined);
   expect(gatheredEffects).toEqual({
     manager1: { cmds: [{ home: "manager1", type: "cmd1" }], subs: [] },
   });
@@ -60,8 +59,7 @@ test("gather effects - mapped command", () => {
     },
     mapSub: (_actionMapper, effect) => effect,
   };
-  const gatheredEffects: GatheredEffects<unknown> = {};
-  gatherEffects(() => mapper, gatheredEffects, true, myCmdFromParent);
+  const gatheredEffects = gatherEffects(() => mapper, myCmdFromParent, undefined);
   expect(gatheredEffects).toEqual({
     MyManager: { cmds: [{ home: "MyManager", type: "MyCmd", gotResult: expect.any(Function) }], subs: [] },
   });

@@ -69,11 +69,22 @@ export type EffectMapper<A1 = unknown, A2 = unknown, THome = unknown> = {
   readonly mapSub: LeafEffectMapper<A1, A2>;
 };
 
+export function gatherEffects<A>(
+  getEffectMapper: (home: string) => EffectMapper,
+  cmd: Effect<unknown> | undefined,
+  sub: Effect<unknown> | undefined
+): GatheredEffects<A> {
+  const gatheredEffects: GatheredEffects<A> = {};
+  cmd && gatherEffectsInternal(getEffectMapper, gatheredEffects, true, cmd); // eslint-disable-line @typescript-eslint/no-unused-expressions,no-unused-expressions
+  sub && gatherEffectsInternal(getEffectMapper, gatheredEffects, false, sub); // eslint-disable-line @typescript-eslint/no-unused-expressions,no-unused-expressions
+  return gatheredEffects;
+}
+
 /**
  * This function is optimized for performance. Hence the ugly boolean
  * and the mutable input param.
  */
-export function gatherEffects<A>(
+function gatherEffectsInternal<A>(
   getEffectMapper: (home: string) => EffectMapper,
   gatheredEffects: GatheredEffects<A>,
   isCmd: boolean,
@@ -84,11 +95,13 @@ export function gatherEffects<A>(
     const internalEffect = effect as BatchedEffect<unknown> | MappedEffect<unknown, unknown>;
     switch (internalEffect.type) {
       case "Batched": {
-        internalEffect.list.flatMap((c) => gatherEffects(getEffectMapper, gatheredEffects, isCmd, c, actionMapper));
+        internalEffect.list.flatMap((c) =>
+          gatherEffectsInternal(getEffectMapper, gatheredEffects, isCmd, c, actionMapper)
+        );
         return;
       }
       case "Mapped":
-        gatherEffects(
+        gatherEffectsInternal(
           getEffectMapper,
           gatheredEffects,
           isCmd,

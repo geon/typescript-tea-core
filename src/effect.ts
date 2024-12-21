@@ -52,16 +52,16 @@ export type LeafEffectMapper<A1 = unknown, A2 = unknown> = (
   effect: Effect<A1>
 ) => LeafEffect<A2>;
 
-export type GatheredEffects<A> = {
-  // This type is mutable for efficency
-  // eslint-disable-next-line functional/prefer-readonly-type
-  [home: string]: {
-    // eslint-disable-next-line functional/prefer-readonly-type
-    readonly cmds: Array<LeafEffect<A>>;
-    // eslint-disable-next-line functional/prefer-readonly-type
-    readonly subs: Array<LeafEffect<A>>;
-  };
-};
+export type GatheredEffects<A> = Readonly<
+  Record<
+    "cmds" | "subs",
+    {
+      // This type is mutable for efficency
+      // eslint-disable-next-line functional/prefer-readonly-type
+      [home: string]: Array<LeafEffect<A>>;
+    }
+  >
+>;
 
 export type EffectMapper<A1 = unknown, A2 = unknown, THome = unknown> = {
   readonly home: THome;
@@ -74,7 +74,7 @@ export function gatherEffects<A>(
   cmd: Effect<unknown> | undefined,
   sub: Effect<unknown> | undefined
 ): GatheredEffects<A> {
-  const gatheredEffects: GatheredEffects<A> = {};
+  const gatheredEffects: GatheredEffects<A> = { cmds: {}, subs: {} };
   cmd && gatherEffectsInternal(getEffectMapper, gatheredEffects, true, cmd); // eslint-disable-line @typescript-eslint/no-unused-expressions,no-unused-expressions
   sub && gatherEffectsInternal(getEffectMapper, gatheredEffects, false, sub); // eslint-disable-line @typescript-eslint/no-unused-expressions,no-unused-expressions
   return gatheredEffects;
@@ -116,13 +116,12 @@ function gatherEffectsInternal<A>(
     }
   } else {
     const manager = getEffectMapper(effect.home);
-    let gatheredEffect = gatheredEffects[effect.home];
+    let gatheredEffect = gatheredEffects[isCmd ? "cmds" : "subs"][effect.home];
     if (!gatheredEffect) {
-      gatheredEffect = { cmds: [], subs: [] };
-      gatheredEffects[effect.home] = gatheredEffect;
+      gatheredEffect = [];
+      gatheredEffects[isCmd ? "cmds" : "subs"][effect.home] = gatheredEffect;
     }
-    const list = isCmd ? gatheredEffect.cmds : gatheredEffect.subs;
     const mapper = isCmd ? manager.mapCmd : manager.mapSub;
-    list.push(actionMapper ? mapper(actionMapper, effect) : effect);
+    gatheredEffect.push(actionMapper ? mapper(actionMapper, effect) : effect);
   }
 }

@@ -119,7 +119,8 @@ export function run<Init, State, Action, View>(
     // Always call all effect managers so they get updated subscriptions even if there are no subscriptions anymore
     for (const em of effectManagers) {
       const home = em.home;
-      const { cmds, subs } = gatheredEffects[home] ?? { cmds: [], subs: [] };
+      const cmds = gatheredEffects.cmds[home] ?? [];
+      const subs = gatheredEffects.subs[home] ?? [];
       const manager = getEffectManager(home);
       managerStates[home] = manager.onEffects(
         enqueueProgramAction,

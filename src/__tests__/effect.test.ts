@@ -29,7 +29,8 @@ test("gather effects - single command", () => {
   const effect: Effect<unknown> = { home: "manager1", type: "cmd1" };
   const gatheredEffects = gatherEffects(() => manager1, effect, undefined);
   expect(gatheredEffects).toEqual({
-    manager1: { cmds: [{ home: "manager1", type: "cmd1" }], subs: [] },
+    cmds: { manager1: [{ home: "manager1", type: "cmd1" }] },
+    subs: {},
   });
 });
 
@@ -61,8 +62,9 @@ test("gather effects - mapped command", () => {
   };
   const gatheredEffects = gatherEffects(() => mapper, myCmdFromParent, undefined);
   expect(gatheredEffects).toEqual({
-    MyManager: { cmds: [{ home: "MyManager", type: "MyCmd", gotResult: expect.any(Function) }], subs: [] },
+    cmds: { MyManager: [{ home: "MyManager", type: "MyCmd", gotResult: expect.any(Function) }] },
+    subs: {},
   });
-  const resultOfGotResult = (gatheredEffects["MyManager"].cmds[0] as MyCmd<unknown>).gotResult("Hello");
+  const resultOfGotResult = (gatheredEffects.cmds["MyManager"][0] as MyCmd<unknown>).gotResult("Hello");
   expect(resultOfGotResult).toEqual({ type: "ParentAction", action: { type: "ChildAction", result: "Hello" } });
 });

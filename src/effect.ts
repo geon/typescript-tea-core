@@ -104,7 +104,7 @@ export function gatherEffects<A>(
   } else {
     const manager = getEffectMapper(effect.home);
     let gatheredEffect = gatheredEffects[effect.home];
-    if (!gatheredEffects[effect.home]) {
+    if (!gatheredEffect) {
       gatheredEffects[effect.home] = { cmds: [], subs: [] };
       gatheredEffect = gatheredEffects[effect.home];
     }

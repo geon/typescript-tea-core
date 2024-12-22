@@ -21,6 +21,18 @@ const managerActionTag = Symbol("managerActionTag");
 type ManagerAction = { readonly [managerActionTag]: void };
 
 /**
+ * A function to create a program without manually specifying the generic
+ * type parameters. It only returns the argument, but helps infer typing.
+ * @param program This is the program to create.
+ * @category Program
+ */
+export function createProgram<Init, State, Action, View>(
+  program: Program<Init, State, Action, View>
+): Program<Init, State, Action, View> {
+  return program;
+}
+
+/**
  * This is the runtime that provides the main loop to run a Program.
  * Given a Program and an array of EffectManagers it will start the program
  * and progress the state each time the program calls update().

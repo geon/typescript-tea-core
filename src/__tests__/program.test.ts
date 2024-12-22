@@ -1,7 +1,7 @@
 /* eslint-disable functional/prefer-readonly-type */
 import { afterAll, beforeAll, expect, test, vi } from "vitest";
 import { Dispatch } from "../dispatch";
-import { Program, run } from "../program";
+import { run, createProgram } from "../program";
 import { createMockEffectManager } from "./helpers/mock-effect-manager";
 import { createMockProgram } from "./helpers/mock-program";
 import { createMockRender } from "./helpers/mock-render";
@@ -23,11 +23,11 @@ afterAll(() => {
 });
 
 test("Run simple program", () => {
-  const program: Program<undefined, string, string, string> = {
+  const program = createProgram({
     init: () => ["Hello"],
     update: () => ["Hello"],
     view: () => "Hello",
-  };
+  });
   const render = (): void => {
     // Do nothing
   };

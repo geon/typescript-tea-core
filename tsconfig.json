@@ -21,5 +21,7 @@
     "strictNullChecks": true,
     "lib": ["dom", "esnext"]
   },
+  "include": ["src/**/*"],
+  "exclude": ["src/__tests__"],
   "references": []
 }

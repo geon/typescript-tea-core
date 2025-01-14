@@ -1,7 +1,7 @@
 module.exports = {
   extends: "divid",
   parserOptions: {
-    project: "./tsconfig.json",
+    project: "./tsconfig-eslint.json",
   },
   rules: {
     "@typescript-eslint/no-redeclare": "off",

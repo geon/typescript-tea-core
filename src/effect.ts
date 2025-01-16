@@ -1,6 +1,7 @@
 /** @ignore */ /** */
 
 import { groupBy } from "./group-by";
+import { Result } from "./result";
 
 /**
  * Commands and Subscriptions are both effects and they can both be batched and mapped.
@@ -11,7 +12,11 @@ import { groupBy } from "./group-by";
  * This is an internal module which is not intended for outside usage.
  * Please use only the Cmd and Sub modules externally.
  */
-export type Effect<A> = BatchedEffect<A> | MappedEffect<A, unknown> | LeafEffect<A>;
+export type Effect<A> =
+  | BatchedEffect<A>
+  | MappedEffect<A, unknown>
+  | LeafEffect<A>
+  | PromiseEffect<A, unknown, unknown>;
 
 export const InternalHome = "__internal";
 export type InternalHome = typeof InternalHome;
@@ -19,6 +24,13 @@ export type InternalHome = typeof InternalHome;
 export type LeafEffect<_A, Home = string> = {
   readonly home: Home;
   readonly type: string;
+};
+
+export type PromiseEffect<A, TError, TValue> = {
+  readonly home: "PromiseEffect";
+  readonly type: string; // Not really used. Just for compatibility.
+  readonly promise: Promise<Result<TError, TValue>>;
+  readonly gotResult: (result: Result<TError, TValue>) => A;
 };
 
 export type BatchedEffect<A> = {
@@ -33,6 +45,41 @@ export type MappedEffect<A1, A2> = {
   readonly actionMapper: (a1: A1) => A2;
   readonly original: BatchedEffect<A1> | MappedEffect<A1, A2> | LeafEffect<A1>;
 };
+
+// Perform a promise that can never fail
+export function perform<A, TValue>(
+  resolved: (value: TValue) => A,
+  promise: Promise<Result<never, TValue>>
+): PromiseEffect<A, never, TValue> {
+  return {
+    home: "PromiseEffect",
+    type: "",
+    promise,
+    gotResult: (result: Result<never, TValue>) => {
+      if (result.type === "Err") {
+        throw new Error(
+          `A promise effect with error of type never has failed. This should never happen. The result was: ${JSON.stringify(
+            result
+          )}`
+        );
+      }
+      return resolved(result.value);
+    },
+  };
+}
+
+// Attempt a promise that can fail
+export function attempt<A, TError, TValue>(
+  gotResult: (result: Result<TError, TValue>) => A,
+  promise: Promise<Result<TError, TValue>>
+): PromiseEffect<A, TError, TValue> {
+  return {
+    home: "PromiseEffect",
+    type: "",
+    promise,
+    gotResult,
+  };
+}
 
 export function batchEffects<A>(effects: ReadonlyArray<Effect<A> | undefined>): BatchedEffect<A> {
   return {

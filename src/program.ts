@@ -2,7 +2,7 @@ import { Cmd } from "./cmd";
 import { Sub } from "./sub";
 import { Dispatch } from "./dispatch";
 import { EffectManager, createGetEffectManager } from "./effect-manager";
-import { gatherEffects } from "./effect";
+import { gatherEffects, PromiseEffect } from "./effect";
 
 /**
  * A program represents the root of an application.
@@ -130,6 +130,15 @@ export function run<Init, State, Action, View>(
         managerStates[home]
       );
     }
+
+    const promiseEffects = gatheredEffects.cmds["PromiseEffect"];
+    if (promiseEffects) {
+      for (const cmd of promiseEffects) {
+        const { promise, gotResult } = cmd as PromiseEffect<Action, unknown, unknown>;
+        promise.then((value) => dispatchProgram(gotResult(value)));
+      }
+    }
+
     if (state !== prevState) {
       prevState = state;
       render(view({ state, dispatch: enqueueProgramAction }));

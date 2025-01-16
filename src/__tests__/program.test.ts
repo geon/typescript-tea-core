@@ -5,6 +5,8 @@ import { run, createProgram } from "../program";
 import { createMockEffectManager } from "./helpers/mock-effect-manager";
 import { createMockProgram } from "./helpers/mock-program";
 import { createMockRender } from "./helpers/mock-render";
+import { perform } from "../effect";
+import { Ok } from "../result";
 
 beforeAll(() => {
   globalThis.window = {
@@ -153,3 +155,46 @@ test("Do call view/render if state has changed", () => {
   expect(mp.view).toBeCalledTimes(2);
   expect(mr).toBeCalledTimes(2);
 });
+
+test("Builtin PromiseEffect", () =>
+  new Promise<void>((done) => {
+    const program = createProgram({
+      init: () => [0],
+      update: (
+        action:
+          | {
+              readonly type: "start";
+            }
+          | {
+              readonly type: "incrementByAmount";
+              readonly amount: number;
+            },
+        state
+      ) =>
+        action.type === "start"
+          ? [
+              state,
+              perform<unknown, number>((amount) => {
+                return { type: "incrementByAmount", amount };
+              }, new Promise((resolve) => setTimeout(() => resolve(Ok(123)), 100))),
+            ]
+          : [state + action.amount],
+      view: (props) => props,
+    });
+
+    run(
+      program,
+      undefined,
+      vi
+        .fn<(...args: Parameters<typeof program.view>) => void>()
+        .mockImplementationOnce(({ state, dispatch }) => {
+          expect(state).toEqual(0);
+          dispatch({ type: "start" });
+        })
+        .mockImplementationOnce(({ state }) => {
+          expect(state).toEqual(123);
+          done();
+        }),
+      []
+    );
+  }));

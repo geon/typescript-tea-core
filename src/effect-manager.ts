@@ -64,6 +64,18 @@ export function createGetEffectManager(effectManagers: ReadonlyArray<EffectManag
   }
   const managers = managersByHome(effectManagers);
   return function getEffectManager(home: string): EffectManager {
+    if (home === "PromiseEffect") {
+      // Return a fake effect manager so gatherEffects is happy.
+      return {
+        home: "PromiseEffect",
+        mapCmd: <A1, A2>(_actionMapper: (a1: A1) => A2, cmd: Cmd<A1>) => cmd as unknown as Cmd<A2>,
+        mapSub: <A1, A2>(_actionMapper: (a1: A1) => A2, cmd: Cmd<A1>) => cmd as unknown as Cmd<A2>,
+        setup: () => () => undefined,
+        onEffects: () => undefined,
+        onSelfAction: () => undefined,
+      };
+    }
+
     const managerModule = managers[home];
     if (!managerModule) {
       throw new Error(`Could not find effect manager '${home}'. Make sure it was passed to the runtime.`);

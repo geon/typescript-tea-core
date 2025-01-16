@@ -76,10 +76,8 @@ export function gatherEffects<A>(
   cmd: Effect<unknown> | undefined,
   sub: Effect<unknown> | undefined
 ): GatheredEffects<A> {
-  const gatheredEffectsCmds: Array<LeafEffect<A>> = [];
-  const gatheredEffectsSubs: Array<LeafEffect<A>> = [];
-  cmd && gatherEffectsInternal(getEffectMapper, gatheredEffectsCmds, true, cmd); // eslint-disable-line @typescript-eslint/no-unused-expressions,no-unused-expressions
-  sub && gatherEffectsInternal(getEffectMapper, gatheredEffectsSubs, false, sub); // eslint-disable-line @typescript-eslint/no-unused-expressions,no-unused-expressions
+  const gatheredEffectsCmds = cmd ? gatherEffectsInternal(getEffectMapper, true, cmd) : [];
+  const gatheredEffectsSubs = sub ? gatherEffectsInternal(getEffectMapper, false, sub) : [];
   return {
     cmds: groupBy(gatheredEffectsCmds, (x) => x.home),
     subs: groupBy(gatheredEffectsSubs, (x) => x.home),
@@ -88,30 +86,23 @@ export function gatherEffects<A>(
 
 function gatherEffectsInternal<A>(
   getEffectMapper: (home: string) => EffectMapper,
-  // eslint-disable-next-line functional/prefer-readonly-type
-  gatheredEffects: Array<LeafEffect<A>>,
   isCmd: boolean,
   effect: Effect<unknown>,
   actionMapper: ((a1: unknown) => unknown) | undefined = undefined
-): void {
+): ReadonlyArray<LeafEffect<A>> {
   if (effect.home === InternalHome) {
     const internalEffect = effect as BatchedEffect<unknown> | MappedEffect<unknown, unknown>;
     switch (internalEffect.type) {
       case "Batched": {
-        internalEffect.list.flatMap((c) =>
-          gatherEffectsInternal(getEffectMapper, gatheredEffects, isCmd, c, actionMapper)
-        );
-        return;
+        return internalEffect.list.flatMap((c) => gatherEffectsInternal(getEffectMapper, isCmd, c, actionMapper));
       }
       case "Mapped":
-        gatherEffectsInternal(
+        return gatherEffectsInternal(
           getEffectMapper,
-          gatheredEffects,
           isCmd,
           internalEffect.original,
           actionMapper ? (a) => actionMapper(internalEffect.actionMapper(a)) : internalEffect.actionMapper
         );
-        return;
       default: {
         const exhaustive: never = internalEffect;
         throw new Error(`Invalid result type ${exhaustive}`);
@@ -120,6 +111,6 @@ function gatherEffectsInternal<A>(
   } else {
     const manager = getEffectMapper(effect.home);
     const mapper = isCmd ? manager.mapCmd : manager.mapSub;
-    gatheredEffects.push(actionMapper ? mapper(actionMapper, effect) : effect);
+    return [actionMapper ? mapper(actionMapper, effect) : effect];
   }
 }

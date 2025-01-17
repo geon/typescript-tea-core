@@ -1,7 +1,6 @@
 import { Cmd } from "./cmd";
 import { Sub } from "./sub";
 import { Dispatch } from "./dispatch";
-import { EffectManager, createGetEffectManager } from "./effect-manager";
 import { gatherEffects, PromiseEffect } from "./effect";
 
 /**
@@ -44,14 +43,10 @@ export function createProgram<Init, State, Action, View>(
 export function run<Init, State, Action, View>(
   program: Program<Init, State, Action, View>,
   init: Init,
-  render: (view: View) => void,
-  effectManagers: ReadonlyArray<EffectManager<string, Action, unknown>> = []
+  render: (view: View) => void
 ): () => void {
-  const getEffectManager = createGetEffectManager(effectManagers);
   const { update, view, subscriptions } = program;
   let state: State;
-  const managerStates: { [home: string]: unknown } = {};
-  const managerTeardowns: Array<() => void> = [];
   let isRunning = false;
   let isProcessing = false;
   const actionQueue: Array<{
@@ -73,32 +68,11 @@ export function run<Init, State, Action, View>(
     isProcessing = false;
   }
 
-  const dispatchManager =
-    (home: string) =>
-    (action: ManagerAction): void => {
-      if (isRunning) {
-        const manager = getEffectManager(home);
-        const enqueueSelfAction = enqueueManagerAction(home);
-        managerStates[home] = manager.onSelfAction(
-          enqueueProgramAction,
-          enqueueSelfAction,
-          action,
-          managerStates[home]
-        );
-      }
-    };
-
   function dispatchProgram(action: Action): void {
     if (isRunning) {
       change(update(action, state));
     }
   }
-
-  const enqueueManagerAction =
-    (home: string) =>
-    (action: ManagerAction): void => {
-      enqueueRaw(dispatchManager(home), action);
-    };
 
   const enqueueProgramAction = (action: Action): void => {
     enqueueRaw(dispatchProgram, action);
@@ -115,23 +89,9 @@ export function run<Init, State, Action, View>(
     state = change[0];
     const cmd = change[1];
     const sub = subscriptions && subscriptions(state);
-    const gatheredEffects = gatherEffects(getEffectManager, cmd, sub);
-    // Always call all effect managers so they get updated subscriptions even if there are no subscriptions anymore
-    for (const em of effectManagers) {
-      const home = em.home;
-      const cmds = gatheredEffects.cmds[home] ?? [];
-      const subs = gatheredEffects.subs[home] ?? [];
-      const manager = getEffectManager(home);
-      managerStates[home] = manager.onEffects(
-        enqueueProgramAction,
-        enqueueManagerAction(home),
-        cmds,
-        subs,
-        managerStates[home]
-      );
-    }
+    const gatheredEffects = gatherEffects(cmd, sub);
 
-    const promiseEffects = gatheredEffects.cmds["PromiseEffect"];
+    const promiseEffects = gatheredEffects.cmds;
     if (promiseEffects) {
       for (const cmd of promiseEffects) {
         const { promise, gotResult } = cmd as PromiseEffect<Action, unknown, unknown>;
@@ -145,20 +105,6 @@ export function run<Init, State, Action, View>(
     }
   }
 
-  function setup(): void {
-    for (const em of effectManagers) {
-      managerTeardowns.push(em.setup(enqueueProgramAction, enqueueManagerAction(em.home)));
-    }
-  }
-
-  function teardown(): void {
-    for (const mtd of managerTeardowns) {
-      mtd();
-    }
-  }
-
-  setup();
-
   isRunning = true;
 
   change(program.init(init));
@@ -168,7 +114,6 @@ export function run<Init, State, Action, View>(
   return function end(): void {
     if (isRunning) {
       isRunning = false;
-      teardown();
     }
   };
 }

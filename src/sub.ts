@@ -9,7 +9,7 @@
  * TEA has two kinds of managed effects: commands and subscriptions.
  * @packageDocumentation
  */
-import { batchEffects, mapEffect } from "./effect";
+import { batchEffects, Effect, mapEffect } from "./effect";
 
 // -- SUBSCRIPTIONS
 
@@ -25,15 +25,7 @@ import { batchEffects, mapEffect } from "./effect";
  * messages that will come back into your application.
  * @category Subscriptions
  */
-export type Sub<Action, Home = string> = {
-  readonly home: Home;
-  readonly type: string;
-  /**
-   * This field is only needed in order to preserve the generic type paramter Action
-   * @ignore
-   */
-  readonly __$$dummy_tag?: Action;
-};
+export type Sub<Action> = Effect<Action>;
 
 /**
  * When you need to subscribe to multiple things, you can create a `batch` of
@@ -51,5 +43,5 @@ export function batch<A>(cmds: ReadonlyArray<Sub<A> | undefined>): Sub<A> {
  * @category Fancy Stuff
  */
 export function map<A1, A2>(actionMapper: (a1: A1) => A2, cmd: Sub<A1> | undefined): Sub<A2> | undefined {
-  return mapEffect(actionMapper, cmd);
+  return mapEffect(actionMapper, cmd) as unknown as Effect<A2> | undefined;
 }

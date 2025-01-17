@@ -2,7 +2,6 @@
 import { afterAll, beforeAll, expect, test, vi } from "vitest";
 import { Dispatch } from "../dispatch";
 import { run, createProgram } from "../program";
-import { createMockEffectManager } from "./helpers/mock-effect-manager";
 import { createMockProgram } from "./helpers/mock-program";
 import { createMockRender } from "./helpers/mock-render";
 import { perform } from "../effect";
@@ -33,7 +32,7 @@ test("Run simple program", () => {
   const render = (): void => {
     // Do nothing
   };
-  const endProgram = run(program, undefined, render, []);
+  const endProgram = run(program, undefined, render);
   expect(endProgram).toBeInstanceOf(Function);
   // expect(globalThis.window.addEventListener).toBeCalled();
 });
@@ -52,30 +51,30 @@ test("View can dispatch", () =>
         done();
       });
     // Run
-    run(mp, undefined, mr, []);
+    run(mp, undefined, mr);
   }));
 
-test("onEffects is called when subscriptions is not undefined", () =>
-  new Promise<void>((done) => {
-    // Create mocks
-    const emHome = "mock1" as const;
-    const me = createMockEffectManager(emHome);
-    const mp = createMockProgram();
-    const mr = createMockRender();
-    // Setup mocks
-    mp.update.mockImplementationOnce(() => [1]);
-    mp.subscriptions.mockReturnValue({ home: emHome, type: "nisse" });
-    mp.view
-      .mockImplementationOnce(({ dispatch }) => dispatch("increment"))
-      .mockImplementationOnce(({ state }) => {
-        expect(state).toEqual(1);
-        expect(me.onEffects.mock.calls.length).toBe(2);
-        done();
-      });
-    me.onEffects.mockReturnValueOnce(0);
-    // Run
-    run(mp, undefined, mr, [me]);
-  }));
+// test("onEffects is called when subscriptions is not undefined", () =>
+//   new Promise<void>((done) => {
+//     // Create mocks
+//     const emHome = "mock1" as const;
+//     const me = createMockEffectManager(emHome);
+//     const mp = createMockProgram();
+//     const mr = createMockRender();
+//     // Setup mocks
+//     mp.update.mockImplementationOnce(() => [1]);
+//     mp.subscriptions.mockReturnValue({ home: emHome, type: "nisse" });
+//     mp.view
+//       .mockImplementationOnce(({ dispatch }) => dispatch("increment"))
+//       .mockImplementationOnce(({ state }) => {
+//         expect(state).toEqual(1);
+//         expect(me.onEffects.mock.calls.length).toBe(2);
+//         done();
+//       });
+//     me.onEffects.mockReturnValueOnce(0);
+//     // Run
+//     run(mp, undefined, mr, [me]);
+//   }));
 
 /**
  * onEffects must be called with undefined subscriptions becuase
@@ -83,29 +82,29 @@ test("onEffects is called when subscriptions is not undefined", () =>
  * manager must know to clear those subscriptions when undefined
  * is returned from program.subscription().
  */
-test("onEffects is called when subscriptions is undefined", () =>
-  new Promise<void>((done) => {
-    // Create mocks
-    const emHome = "mock1" as const;
-    const me = createMockEffectManager(emHome);
-    const mp = createMockProgram();
-    const mr = createMockRender();
-    // Setup mocks
-    mp.update.mockImplementationOnce(() => [1]);
-    mp.subscriptions.mockReturnValueOnce(undefined);
-    mp.view.mockImplementationOnce(({ state }) => {
-      expect(state).toEqual(0);
-      expect(me.onEffects.mock.calls.length).toBe(1);
-      // cmds passed to onEffects() should be an empty array
-      expect(me.onEffects.mock.calls[0][2]).toStrictEqual([]);
-      // subs passed to onEffects() should be an empty array
-      expect(me.onEffects.mock.calls[0][3]).toStrictEqual([]);
-      done();
-    });
-    me.onEffects.mockReturnValueOnce(0);
-    // Run
-    run(mp, undefined, mr, [me]);
-  }));
+// test("onEffects is called when subscriptions is undefined", () =>
+//   new Promise<void>((done) => {
+//     // Create mocks
+//     const emHome = "mock1" as const;
+//     const me = createMockEffectManager(emHome);
+//     const mp = createMockProgram();
+//     const mr = createMockRender();
+//     // Setup mocks
+//     mp.update.mockImplementationOnce(() => [1]);
+//     mp.subscriptions.mockReturnValueOnce(undefined);
+//     mp.view.mockImplementationOnce(({ state }) => {
+//       expect(state).toEqual(0);
+//       expect(me.onEffects.mock.calls.length).toBe(1);
+//       // cmds passed to onEffects() should be an empty array
+//       expect(me.onEffects.mock.calls[0][2]).toStrictEqual([]);
+//       // subs passed to onEffects() should be an empty array
+//       expect(me.onEffects.mock.calls[0][3]).toStrictEqual([]);
+//       done();
+//     });
+//     me.onEffects.mockReturnValueOnce(0);
+//     // Run
+//     run(mp, undefined, mr, [me]);
+//   }));
 
 /**
  * If state has not changed then calling render is not useful.
@@ -127,7 +126,7 @@ test("Do not call view/render if state has not changed", () => {
     dispatch("action");
   });
   // Run
-  run(mp, undefined, mr, []);
+  run(mp, undefined, mr);
   expect(mp.init).toBeCalledTimes(1);
   expect(mp.update).toBeCalledTimes(1);
   expect(mp.view).toBeCalledTimes(1);
@@ -149,7 +148,7 @@ test("Do call view/render if state has changed", () => {
     dispatch("action");
   });
   // Run
-  run(mp, undefined, mr, []);
+  run(mp, undefined, mr);
   expect(mp.init).toBeCalledTimes(1);
   expect(mp.update).toBeCalledTimes(1);
   expect(mp.view).toBeCalledTimes(2);
@@ -194,7 +193,6 @@ test("Builtin PromiseEffect", () =>
         .mockImplementationOnce(({ state }) => {
           expect(state).toEqual(123);
           done();
-        }),
-      []
+        })
     );
   }));

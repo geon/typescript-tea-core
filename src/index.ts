@@ -10,9 +10,6 @@ import * as DispatchNs from "./dispatch";
 export const Dispatch = DispatchNs;
 export type Dispatch<A> = DispatchNs.Dispatch<A>;
 
-// Effect manager
-export * from "./effect-manager";
-
 // Cmd
 import * as CmdNs from "./cmd";
 export const Cmd = CmdNs;

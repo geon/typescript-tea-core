@@ -3,9 +3,8 @@ import { describe, expect, test, vi } from "vitest";
 import { Dispatch } from "../dispatch";
 import { run, createProgram, Program } from "../program";
 import { Cmd } from "../cmd";
-import { EffectManager } from "../effect-manager";
-import { Sub } from "../sub";
-import { mapEffect } from "../effect";
+import { mapEffect, perform, PromiseEffect } from "../effect";
+import { Ok } from "../result";
 
 const tests: ReadonlyArray<TestProgram<unknown, unknown>> = [
   createTest({
@@ -193,7 +192,6 @@ const tests: ReadonlyArray<TestProgram<unknown, unknown>> = [
     description: "Command in fractal update",
     initialState: 0,
     update: (action, state) => {
-      console.log("asdsfction", action);
       switch (action.type) {
         case "inner-update-action": {
           const innerAction = action.innerAction;
@@ -279,38 +277,12 @@ function createTest<State, Action>(test: {
   };
 }
 
-type TestEffectManagerCmd = {
-  readonly home: "test";
-  readonly type: string;
-  readonly value: number;
-  readonly onResult: (result: number) => unknown;
-};
-function createTestEffectManagerCmd(value: number, onResult: (result: unknown) => unknown): TestEffectManagerCmd {
-  return {
-    home: "test",
-    type: "",
-    value,
-    onResult,
-  };
+function createTestEffectManagerCmd<Action, Value>(
+  value: Value,
+  onResult: (result: Value) => Action
+): PromiseEffect<Action, undefined, Value> {
+  return perform<Action, Value>(onResult, new Promise((resolve) => setTimeout(() => resolve(Ok(value)), 10)));
 }
-const testEffectManager: EffectManager<"test", unknown, never, void, TestEffectManagerCmd, Sub<string, "test">> = {
-  home: "test",
-  mapCmd: ((actionMapper: (a: unknown) => unknown, cmd: TestEffectManagerCmd) => ({
-    ...cmd,
-    onResult: (result: number) => actionMapper(cmd.onResult(result)),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  })) as any,
-  mapSub: () => {
-    throw new Error("not implemented");
-  },
-  setup: () => () => undefined,
-  onEffects: (dispatchProgram, _dispatchSelf, cmds, _subs, _state) => {
-    for (const cmd of cmds) {
-      dispatchProgram(cmd.onResult(cmd.value));
-    }
-  },
-  onSelfAction: () => undefined,
-};
 
 describe("Run programs", async () => {
   for (const testProgram of tests) {
@@ -341,7 +313,7 @@ describe("Run programs", async () => {
       // The initial render is done by `run`, so set up the render promise first, and await after `run`.
       {
         const promise = createRenderPromise();
-        run(testProgram.program, undefined, render, [testEffectManager]);
+        run(testProgram.program, undefined, render);
         expect(await promise).toEqual(testProgram.initialState);
       }
 

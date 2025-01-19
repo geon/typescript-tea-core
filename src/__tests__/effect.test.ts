@@ -1,5 +1,24 @@
 import { expect, test } from "vitest";
-import { Effect, InternalHome, MappedEffect, gatherEffects, GatheredEffects, EffectMapper } from "../effect";
+import { Effect, InternalHome, MappedEffect, gatherEffects, GatheredEffects, EffectMapper, mapEffect } from "../effect";
+
+test("map effect", () => {
+  const effect: Effect<unknown> = { home: "manager1", type: "cmd1" };
+  const mappedEffect = mapEffect((innerAction) => ({ type: "inner-action", innerAction } as const), effect)!;
+  const mappedAction = mappedEffect.actionMapper("action");
+  expect(mappedEffect).toEqual({
+    actionMapper: expect.any(Function),
+    home: "__internal",
+    original: {
+      home: "manager1",
+      type: "cmd1",
+    },
+    type: "Mapped",
+  });
+  expect(mappedAction).toEqual({
+    innerAction: "action",
+    type: "inner-action",
+  });
+});
 
 test("gather effects - single command", () => {
   const manager1: EffectMapper = {

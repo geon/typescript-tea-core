@@ -1,4 +1,4 @@
-import { mapEffect, MappedEffect, PromiseEffect } from "../effect";
+import { BatchedEffect, Effect, mapEffect, MappedEffect, PromiseEffect } from "../effect";
 
 // Prevent eslint@typescript-eslint/no-unused-expressions
 function use(..._args: ReadonlyArray<unknown>): void {
@@ -14,7 +14,7 @@ function mapAction<Action>(mapped: Action): MappedAction<Action> {
 {
   type Action = "action";
 
-  const effect: PromiseEffect<Action, unknown> = undefined!;
+  const effect: PromiseEffect<Action, unknown, unknown> = undefined!;
   const mappedEffect: MappedEffect<Action, MappedAction<Action>> = mapEffect(mapAction, effect)!;
 
   use(mappedEffect);
@@ -31,4 +31,23 @@ function mapAction<Action>(mapped: Action): MappedAction<Action> {
   )!;
 
   use(doublyMappedEffect);
+}
+
+// A Effect<Action> could be
+// * A batched effect where the action type is Action
+// * A mapped effect where the *outer* action type is Action
+{
+  type Action = "action";
+
+  const mappedEffect: MappedEffect<unknown, Action> = undefined!;
+  const batchedEffect: BatchedEffect<Action> = undefined!;
+  const effects: ReadonlyArray<Effect<Action>> = [mappedEffect, batchedEffect];
+
+  // // Only works if LeafEffect has a `__$$dummy_tag: A` property.
+  // const mappedEffectN: MappedEffect<Action, unknown> = undefined!;
+  // const batchedEffectN: BatchedEffect<Action> = undefined!;
+  // // @ts-expect-error: mappedEffect has the *inner* action typed. It should be the outer.
+  // const effectsN: ReadonlyArray<Effect<Action>> = [mappedEffectN, batchedEffectN];
+
+  use(effects);
 }

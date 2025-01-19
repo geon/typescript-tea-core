@@ -1,10 +1,8 @@
 import { expect, test } from "vitest";
 import { Effect, InternalHome, MappedEffect, gatherEffects, EffectMapper, mapEffect, perform } from "../effect";
+import { Ok } from "../result";
 
-const effect = perform(
-  async () => undefined,
-  () => "action" as const
-);
+const effect = perform(() => "action" as const, Promise.resolve(Ok(undefined)));
 
 test("map effect", () => {
   const effect: Effect<unknown> = { home: "manager1", type: "cmd1" };
@@ -37,8 +35,8 @@ test("gather effects - single command", () => {
       PromiseEffect: [
         {
           home: "PromiseEffect",
-          makeAction: expect.any(Function),
-          makePromise: expect.any(Function),
+          gotResult: expect.any(Function),
+          promise: expect.any(Promise),
           type: "",
         },
       ],

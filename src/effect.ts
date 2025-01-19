@@ -14,7 +14,7 @@ import { Result } from "./result";
  */
 export type Effect<A> =
   | BatchedEffect<A>
-  | MappedEffect<A, unknown>
+  | MappedEffect<unknown, A>
   | LeafEffect<A>
   | PromiseEffect<A, unknown, unknown>;
 
